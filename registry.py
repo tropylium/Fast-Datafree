@@ -29,7 +29,7 @@ NORMALIZE_DICT = {
     'places365_64x64': dict( mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5) ),
     'places365': dict( mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5) ),
     'svhn': dict( mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5) ),
-    'tiny_imagenet': dict( mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5) ),
+    'tinyimagenet': dict( mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5) ),
     'imagenet_32x32': dict( mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5) ),
     
     # for semantic segmentation
@@ -297,9 +297,9 @@ def get_dataset(name: str, data_root: str='data', return_transform=False, split=
             T.Normalize( **NORMALIZE_DICT[name] )]
         )       
         data_root = os.path.join(data_root, 'StanfordCars')
-        train_dst = datafree.datasets.StanfordCars(data_root, split='train', transform=train_transform)
-        val_dst = datafree.datasets.StanfordCars(data_root, split='test', transform=val_transform)
-    elif name=='tiny_imagenet':
+        train_dst = datafree.datasets.StanfordCars(data_root, train=True, transform=train_transform)
+        val_dst = datafree.datasets.StanfordCars(data_root, train=False, transform=val_transform)
+    elif name=='tinyimagenet':
         num_classes=200
         train_transform = T.Compose([
             T.RandomCrop(64, padding=4),
@@ -311,9 +311,9 @@ def get_dataset(name: str, data_root: str='data', return_transform=False, split=
             T.ToTensor(),
             T.Normalize( **NORMALIZE_DICT[name] )]
         )       
-        data_root = os.path.join(data_root, 'tiny-imagenet-200')
-        train_dst = datafree.datasets.TinyImageNet(data_root, split='train', transform=train_transform)
-        val_dst = datafree.datasets.TinyImageNet(data_root, split='val', transform=val_transform)
+        data_root = os.path.join(data_root, 'tinyimagenet')
+        train_dst = datafree.datasets.TinyImageNet(data_root, train=True, transform=train_transform)
+        val_dst = datafree.datasets.TinyImageNet(data_root, train=False, transform=val_transform)
 
     # For semantic segmentation
     elif name=='nyuv2':

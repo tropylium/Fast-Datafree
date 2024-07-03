@@ -1,3 +1,15 @@
+## Training from Scratch
+```
+python train_scratch.py --data_root './data' --model 'resnet18' --dataset 'tinyimagenet' --print-freq 5
+```
+### Notes:
+* Issue: `ModuleNotFoundError: No module named 'torchvision.models.utils'`
+  * => [replace all occurences of torchvision.models.utils with torch.hub](https://stackoverflow.com/questions/70998767/no-module-named-torchvision-models-utils)
+* Issue: TinyImageNet not implemented
+  * => sub in own implementation
+## KD
+Original README is below:
+
 # Fast-Datafree
 
 This repo implements the efficient data-free distillation algorithm from the AAAI-22 paper 
