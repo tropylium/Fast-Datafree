@@ -265,8 +265,14 @@ def main_worker(gpu, ngpus_per_node, args):
     student = registry.get_model(args.student, num_classes=num_classes)
     teacher = registry.get_model(args.teacher, num_classes=num_classes, pretrained=True).eval()
     args.normalizer = normalizer = datafree.utils.Normalizer(**registry.NORMALIZE_DICT[args.dataset])
-    if args.dataset!='imagenet':
-        teacher.load_state_dict(torch.load('checkpoints/pretrained/%s_%s.pth'%(args.dataset, args.teacher), map_location='cpu')['state_dict'])
+    if args.dataset !='imagenet':
+        pretrained_state_dict = torch.load('checkpoints/pretrained/%s_%s.pth'%(args.dataset, args.teacher), map_location='cpu')['state_dict']
+        processed_state_dict = {}
+        REMOVE_PREFIX = "module."
+        for k, v in pretrained_state_dict.items():
+            new_k = k[len(REMOVE_PREFIX):] if REMOVE_PREFIX == k[:len(REMOVE_PREFIX)] else k
+            processed_state_dict[new_k] = v
+        teacher.load_state_dict(processed_state_dict)
     student = prepare_model(student)
     teacher = prepare_model(teacher)
     criterion = datafree.criterions.KLDiv(T=args.T)
@@ -340,7 +346,6 @@ def main_worker(gpu, ngpus_per_node, args):
     #             start_kd=args.start_kd, rand_label=args.rand_label, reset_l0=args.reset_l0,
     #             reset_bn=args.reset_bn, bn_mmt=args.bn_mmt, lr_diff=args.lr_diff)
     if args.method=='fast_meta':
-        assert args.dataset=='imagenet':
         nz = 256
         generator = datafree.models.generator.DeepGenerator(nz=nz, ngf=64, img_size=224, nc=3)
         img_size = (3, 224, 224)
