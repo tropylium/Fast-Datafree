@@ -84,7 +84,7 @@ class FastMetaSynthesizerForImageNet(BaseSynthesis):
         self.lr_z_meta = lr_z_meta
         self.lr_g_meta = lr_g_meta 
         self.generator = generator.to(device).train()
-        self.z = torch.randn(size=(self.synthesis_batch_size, self.nz, self.img_size[-2]//16, self.img_size[-1]//16), device=self.device).requires_grad_() 
+        self.z = torch.randn(size=(self.synthesis_batch_size, self.nz, self.img_size[-2]//16, self.img_size[-1]//16)).cuda().requires_grad_() 
         self.meta_optimizer = torch.optim.Adam([{'params': self.generator.parameters()}, 
                         {'params': [self.z], 'lr': lr_z_meta}], lr=lr_g_meta, betas=[0.5, 0.999])
 
@@ -110,19 +110,24 @@ class FastMetaSynthesizerForImageNet(BaseSynthesis):
         if self.reinit>0 and self.ep%self.reinit==0:
             print('reinit!')
             #self.generator = self.generator.clone(copy_params=False).to(self.device).train()
-            self.z = torch.randn(size=(self.synthesis_batch_size, self.nz, self.img_size[-2]//16, self.img_size[-1]//16), device=self.device).requires_grad_() 
+            self.z = torch.randn(size=(self.synthesis_batch_size, self.nz, self.img_size[-2]//16, self.img_size[-1]//16)).cuda().requires_grad_() 
             self.meta_optimizer = torch.optim.Adam([{'params': self.generator.parameters()}, 
                             {'params': [self.z], 'lr': self.lr_z_meta}], lr=self.lr_g_meta, betas=[0.5, 0.999])
-        z = self.z.detach().requires_grad_() #  torch.randn(size=(self.synthesis_batch_size, self.nz, self.img_size[-2]//16, self.img_size[-1]//16), device=self.device).requires_grad_()  # 
+        z = self.z.detach().cuda().requires_grad_() #  torch.randn(size=(self.synthesis_batch_size, self.nz, self.img_size[-2]//16, self.img_size[-1]//16), device=self.device).requires_grad_()  # 
         if targets is None:
             targets = torch.randint(low=0, high=self.num_classes, size=(self.synthesis_batch_size,))
         #targets = targets.sort()[0] # sort for better visualization
-        targets = targets.to(self.device)
-        fast_generator = self.generator.clone().train()
+        targets = targets.cuda() #.to(self.device)
+        if isinstance(self.generator, nn.DataParallel):
+            fast_generator = nn.DataParallel(self.generator.module.clone()).train()
+        else:
+            fast_generator = self.generator.clone().train()
         optimizer = torch.optim.Adam([{'params': fast_generator.parameters()}, 
                                       {'params': [z], 'lr': self.lr_z}], lr=self.lr_g, betas=[0.5, 0.999])       
         #print(targets)  
         for it in range(self.iterations):
+            # print(z.device, next(fast_generator.parameters()).device)
+            # raise Exception("stop here")
             inputs = fast_generator(z)
             inputs_aug = self.aug(inputs) # crop and normalize
             if it == 0:
@@ -131,7 +136,7 @@ class FastMetaSynthesizerForImageNet(BaseSynthesis):
             # Inversion Loss
             #############################################
             t_out = self.teacher(inputs_aug)
-            loss_bn = sum([h.r_feature for h in self.hooks])
+            loss_bn = sum([h.r_feature.cuda() for h in self.hooks])
             loss_oh = F.cross_entropy( t_out, targets )
             if self.adv>0:
                 s_out = self.student(inputs_aug)
@@ -147,7 +152,8 @@ class FastMetaSynthesizerForImageNet(BaseSynthesis):
             #if it%10==0:
             #    datafree.utils.save_image_batch( inputs, 'checkpoints/vis/%d.png'%(it) )
             #    print(loss_bn.item(), loss_oh.item())
-        
+        # print(self.z.device, z.device)
+        # raise Exception("stop here")
         if self.bn_mmt != 0:
             for h in self.hooks:
                 h.update_mmt()

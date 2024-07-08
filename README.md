@@ -34,7 +34,8 @@ python datafree_kd_imagenet.py \
 --bn_mmt 0.9 \
 --lr_diff 1 \
 --is_maml 0 \
---batch_size 16
+--batch_size 128 \
+--synthesis_batch_size 64
 ```
 ### Notes:
 * syntax error: remove line

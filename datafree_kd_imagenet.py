@@ -22,6 +22,12 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+from datetime import datetime, timedelta
+
+start = datetime.now()
+def print_from_start(*args):
+    print(datetime.now() - start, "\t|", *args,)
+print_from_start("START!")
 
 parser = argparse.ArgumentParser(description='Data-free Knowledge Distillation')
 
@@ -105,7 +111,7 @@ parser.add_argument('--synthesis_batch_size', default=None, type=int,
                          'using Data Parallel or Distributed Data Parallel')
 
 # Device
-parser.add_argument('--gpu', default=0, type=int,
+parser.add_argument('--gpu', default=None, type=int,
                     help='GPU id to use.')
 # TODO: Distributed and FP-16 training 
 parser.add_argument('--world_size', default=-1, type=int,
@@ -274,7 +280,9 @@ def main_worker(gpu, ngpus_per_node, args):
             processed_state_dict[new_k] = v
         teacher.load_state_dict(processed_state_dict)
     student = prepare_model(student)
+    # student = student.cuda(0)
     teacher = prepare_model(teacher)
+    # teacher = teacher.cuda(1)
     criterion = datafree.criterions.KLDiv(T=args.T)
     ############################################
     # Setup the data-free synthesizer
@@ -350,6 +358,7 @@ def main_worker(gpu, ngpus_per_node, args):
         generator = datafree.models.generator.DeepGenerator(nz=nz, ngf=64, img_size=224, nc=3)
         img_size = (3, 224, 224)
         generator = prepare_model(generator)
+        # generator = generator.cuda(2)
         synthesizer = datafree.synthesis.FastMetaSynthesizerForImageNet(teacher, student, generator,
                  nz=nz, num_classes=num_classes, img_size=img_size,
                  init_dataset=args.cmi_init, iterations=args.g_steps, reinit=args.reinit,
@@ -414,14 +423,17 @@ def main_worker(gpu, ngpus_per_node, args):
         #if args.distributed:
         #    train_sampler.set_epoch(epoch)
         args.current_epoch=epoch
-        for _ in range( args.ep_steps//args.kd_steps ): # total kd_steps < ep_steps
+        print_from_start(f"starting kd, epoch {epoch}")
+        for step in range( args.ep_steps//args.kd_steps ): # total kd_steps < ep_steps
             # 1. Data synthesis
             vis_results, loss_dict, cost = synthesizer.synthesize() # g_steps
+            print_from_start(f"finished synthesize, step {step}")
             time_cost += cost
             # 2. Knowledge distillation
             if args.apply_kd:
                 train( synthesizer, [student, teacher], criterion, optimizer, args) # # kd_steps
-            
+                print_from_start(f"finished apply kd training, step {step}")
+        
         for vis_name, vis_image in vis_results.items():
             datafree.utils.save_image_batch( vis_image, 'checkpoints/datafree-%s/%s%s.png'%(args.method, vis_name, args.log_tag) )
         if args.apply_kd:
