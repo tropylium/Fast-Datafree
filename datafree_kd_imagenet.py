@@ -22,6 +22,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+import sys
 
 parser = argparse.ArgumentParser(description='Data-free Knowledge Distillation')
 
@@ -214,6 +215,7 @@ def main_worker(gpu, ngpus_per_node, args):
         args.log_tag = '-'+args.log_tag
     log_name = 'R%d-%s-%s-%s%s'%(args.rank, args.dataset, args.teacher, args.student, args.log_tag) if args.multiprocessing_distributed else '%s-%s-%s'%(args.dataset, args.teacher, args.student)
     args.logger = datafree.utils.logger.get_logger(log_name, output='checkpoints/datafree-%s/log-%s-%s-%s%s.txt'%(args.method, args.dataset, args.teacher, args.student, args.log_tag))
+    args.logger.info(" ".join(sys.argv))
     if args.rank<=0:
         for k, v in datafree.utils.flatten_dict( vars(args) ).items(): # print args
             args.logger.info( "%s: %s"%(k,v) )

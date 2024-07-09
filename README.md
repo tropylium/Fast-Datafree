@@ -8,34 +8,7 @@ python train_scratch.py --data_root './data' --model 'resnet18' --dataset 'tinyi
 * Issue: TinyImageNet not implemented
   * => sub in own implementation
 ## KD
-```
-python datafree_kd_imagenet.py \
---method fast_meta \
---adv 0.1 \
---bn 0.1 \
---oh 0.1 \
---save_dir run/tinyimagenet_resnet18 \
---data_root data \
---teacher resnet18 \
---student resnet18 \
---dataset tinyimagenet \
---lr 0.1 \
---lr_g 0.0002 \
---lr_z 0.01 \
---lr_g_meta 0.0001 \
---lr_z_meta 0.005 \
---T 5.0 \
---epochs 400 \
---g_steps 50 \
---kd_steps 100 \
---ep_steps 1000 \
---reinit 50 \
---apply_kd 1 \
---bn_mmt 0.9 \
---lr_diff 1 \
---is_maml 0 \
---batch_size 16
-```
+See `kd.sh`. 
 ### Notes:
 * syntax error: remove line
 * make `checkpoints/pretrained/` folder and put pretrained model there
