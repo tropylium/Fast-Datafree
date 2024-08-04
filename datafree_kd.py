@@ -243,7 +243,16 @@ def main_worker(gpu, ngpus_per_node, args):
     student = registry.get_model(args.student, num_classes=num_classes)
     teacher = registry.get_model(args.teacher, num_classes=num_classes, pretrained=True).eval()
     args.normalizer = normalizer = datafree.utils.Normalizer(**registry.NORMALIZE_DICT[args.dataset])
-    teacher.load_state_dict(torch.load('checkpoints/pretrained/%s_%s.pth'%(args.dataset, args.teacher), map_location='cpu')['state_dict'])
+    # teacher.load_state_dict(torch.load('checkpoints/pretrained/%s_%s.pth'%(args.dataset, args.teacher), map_location='cpu')['state_dict'])
+    teacher_save_location = 'checkpoints/pretrained/%s_%s.pth'%(args.dataset, args.teacher)
+    args.logger.info(f"Using teacher from: {teacher_save_location}")
+    pretrained_state_dict = torch.load(teacher_save_location, map_location='cpu')['state_dict']
+    processed_state_dict = {}
+    REMOVE_PREFIX = "module."
+    for k, v in pretrained_state_dict.items():
+        new_k = k[len(REMOVE_PREFIX):] if REMOVE_PREFIX == k[:len(REMOVE_PREFIX)] else k
+        processed_state_dict[new_k] = v
+    teacher.load_state_dict(processed_state_dict)
     student = prepare_model(student)
     teacher = prepare_model(teacher)
     criterion = datafree.criterions.KLDiv(T=args.T)
@@ -253,10 +262,15 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.synthesis_batch_size is None:
         args.synthesis_batch_size = args.batch_size
 
+    if args.dataset == 'tinyimagenet':
+        IMAGE_SIZE = 64
+    else:
+        IMAGE_SIZE = 32
+    print(f"using image size: {IMAGE_SIZE}")
     if args.method=='deepinv':
         synthesizer = datafree.synthesis.DeepInvSyntheiszer(
                  teacher=teacher, student=student, num_classes=num_classes, 
-                 img_size=(3, 32, 32), iterations=args.g_steps, lr_g=args.lr_g,
+                 img_size=(3, IMAGE_SIZE, IMAGE_SIZE), iterations=args.g_steps, lr_g=args.lr_g,
                  synthesis_batch_size=args.synthesis_batch_size, sample_batch_size=args.batch_size, 
                  adv=args.adv, bn=args.bn, oh=args.oh, tv=0.0, l2=0.0,
                  save_dir=args.save_dir, transform=ori_dataset.transform,
@@ -303,10 +317,10 @@ def main_worker(gpu, ngpus_per_node, args):
                  bn_mmt=args.bn_mmt, is_maml=args.is_maml)
     elif args.method=='fast_meta':
         nz = 256
-        generator = datafree.models.generator.Generator(nz=nz, ngf=64, img_size=32, nc=3)
+        generator = datafree.models.generator.Generator(nz=nz, ngf=64, img_size=IMAGE_SIZE, nc=3)
         generator = prepare_model(generator)
         synthesizer = datafree.synthesis.FastMetaSynthesizer(teacher, student, generator,
-                 nz=nz, num_classes=num_classes, img_size=(3, 32, 32), init_dataset=args.cmi_init,
+                 nz=nz, num_classes=num_classes, img_size=(3, IMAGE_SIZE, IMAGE_SIZE), init_dataset=args.cmi_init,
                  save_dir=args.save_dir, device=args.gpu,
                  transform=ori_dataset.transform, normalizer=args.normalizer,
                  synthesis_batch_size=args.synthesis_batch_size, sample_batch_size=args.batch_size,

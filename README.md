@@ -1,6 +1,6 @@
 ## Training from Scratch
 ```
-python train_scratch.py --data_root './data' --model 'resnet18' --dataset 'tinyimagenet' --print-freq 5
+python train_scratch.py --data_root './data' --model 'resnet18' --dataset 'tinyimagenet' --print-freq 5 --batch-size 1024
 ```
 ### Notes:
 * Issue: `ModuleNotFoundError: No module named 'torchvision.models.utils'`

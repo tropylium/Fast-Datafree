@@ -1,0 +1,27 @@
+python datafree_kd.py \
+--gpu 0 \
+--dataset tinyimagenet \
+--data_root data \
+--teacher resnet34 \
+--student resnet18 \
+--warmup 0 \
+--epochs 100 \
+--batch_size 128 \
+--synthesis_batch_size 32 \
+--lr 0.2 \
+--kd_steps 100 \
+--ep_steps 500 \
+--lr_z 0.0015 \
+--lr_g 5e-3 \
+--adv 1.33 \
+--bn 10.0 \
+--oh 0.5 \
+--bn_mmt 0.9 \
+--act 0 --balance 0 \
+--T 20 \
+--method fast_meta --is_maml 1 \
+--g_steps 2 \
+--reset_bn 0 \
+--reset_l0 1 \
+--is_maml 0 \
+--save_dir run/tinyimagenet_resnet34

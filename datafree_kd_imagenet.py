@@ -224,11 +224,11 @@ def main_worker(gpu, ngpus_per_node, args):
     # Setup dataset
     ############################################
     num_classes, ori_dataset, val_dataset = registry.get_dataset(name=args.dataset, data_root=args.data_root)
-    val_loader = torch.utils.data.DataLoader(
-        val_dataset,
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=False)
-    evaluator = datafree.evaluators.classification_evaluator(val_loader)
+    # val_loader = torch.utils.data.DataLoader(
+    #     val_dataset,
+    #     batch_size=args.batch_size, shuffle=False,
+    #     num_workers=args.workers, pin_memory=False)
+    # evaluator = datafree.evaluators.classification_evaluator(val_loader)
 
     ############################################
     # Setup models
@@ -265,7 +265,7 @@ def main_worker(gpu, ngpus_per_node, args):
             return model
 
     student = registry.get_model(args.student, num_classes=num_classes)
-    teacher = registry.get_model(args.teacher, num_classes=num_classes, pretrained=True).eval()
+    # teacher = registry.get_model(args.teacher, num_classes=num_classes, pretrained=True).eval()
     args.normalizer = normalizer = datafree.utils.Normalizer(**registry.NORMALIZE_DICT[args.dataset])
     if args.dataset !='imagenet':
         pretrained_state_dict = torch.load('checkpoints/pretrained/%s_%s.pth'%(args.dataset, args.teacher), map_location='cpu')['state_dict']
@@ -275,6 +275,8 @@ def main_worker(gpu, ngpus_per_node, args):
             new_k = k[len(REMOVE_PREFIX):] if REMOVE_PREFIX == k[:len(REMOVE_PREFIX)] else k
             processed_state_dict[new_k] = v
         teacher.load_state_dict(processed_state_dict)
+    teacher = models.resnet18(models.ResNet18_Weights.IMAGENET1K_V1)
+    teacher.eval()
     student = prepare_model(student)
     teacher = prepare_model(teacher)
     criterion = datafree.criterions.KLDiv(T=args.T)

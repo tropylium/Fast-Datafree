@@ -121,8 +121,8 @@ def get_dataset(name: str, data_root: str='data', return_transform=False, split=
             T.Normalize( **NORMALIZE_DICT[name] ),
         ])
         data_root = os.path.join( data_root, 'torchdata' )
-        train_dst = datasets.CIFAR10(data_root, train=True, download=False, transform=train_transform)
-        val_dst = datasets.CIFAR10(data_root, train=False, download=False, transform=val_transform)
+        train_dst = datasets.CIFAR10(data_root, train=True, download=True, transform=train_transform)
+        val_dst = datasets.CIFAR10(data_root, train=False, download=True, transform=val_transform)
     elif name=='cifar100':
         num_classes = 100
         train_transform = T.Compose([
@@ -166,8 +166,11 @@ def get_dataset(name: str, data_root: str='data', return_transform=False, split=
             T.Normalize(**NORMALIZE_DICT[name]),
         ])
         data_root = os.path.join( data_root, 'ILSVRC2012' ) 
-        train_dst = datasets.ImageNet(data_root, split='train', transform=train_transform)
-        val_dst = datasets.ImageNet(data_root, split='val', transform=val_transform)
+        from unittest.mock import Mock
+        m = Mock()
+        m.transform = train_transform
+        train_dst = m #None #datasets.ImageNet(data_root, split='train', transform=train_transform)
+        val_dst = None #datasets.ImageNet(data_root, split='val', transform=val_transform)
     elif name=='imagenet_32x32':
         num_classes=1000
         train_transform = T.Compose([
@@ -305,12 +308,13 @@ def get_dataset(name: str, data_root: str='data', return_transform=False, split=
             T.RandomCrop(64, padding=4),
             T.RandomHorizontalFlip(),
             T.ToTensor(),
-            T.Normalize( **NORMALIZE_DICT[name] )]
-        )
+            T.RandomApply([T.GaussianBlur(25),], p=0.8)
+            # T.Normalize( **NORMALIZE_DICT[name] ),
+        ])
         val_transform = T.Compose([
             T.ToTensor(),
-            T.Normalize( **NORMALIZE_DICT[name] )]
-        )       
+            # T.Normalize( **NORMALIZE_DICT[name] )
+        ])       
         data_root = os.path.join(data_root, 'tinyimagenet')
         train_dst = datafree.datasets.TinyImageNet(data_root, train=True, transform=train_transform)
         val_dst = datafree.datasets.TinyImageNet(data_root, train=False, transform=val_transform)

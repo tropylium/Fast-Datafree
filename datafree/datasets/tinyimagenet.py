@@ -3,6 +3,7 @@ import torch
 from typing import Optional, Callable, Any, Tuple, cast
 import os
 from torchvision.transforms import v2
+import json
 
 class TinyImageNet(VisionDataset):
     TRAIN_IMAGES = "train-images.pt"
@@ -30,6 +31,9 @@ class TinyImageNet(VisionDataset):
         
         self.images, self.targets = self._load_data()
         self.to_images = v2.ToPILImage()
+
+        with open(os.path.join(root, "labels_info.json")) as f:
+            self.idx_to_description = json.load(f)
 
     def _check_exists(self) -> bool:
         return all(

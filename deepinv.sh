@@ -1,0 +1,22 @@
+python datafree_kd.py \
+--method deepinv \
+--dataset tinyimagenet \
+--batch_size 256 \
+--synthesis_batch_size 64 \
+--teacher resnet18 \
+--student resnet18 \
+--lr 0.1 \
+--epochs 1 \
+--kd_steps 400 \
+--ep_steps 1 \
+--g_steps 2000 \
+--lr_g 0.1 \
+--adv 1 \
+--bn 10 \
+--oh 1 \
+--T 20 \
+--act 0 \
+--balance 0 \
+--gpu 0 \
+--save_dir run/deepinv \
+--log_tag deepinv
